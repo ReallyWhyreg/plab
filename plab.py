@@ -66,11 +66,11 @@ def start_new_run(run_id):
 
 
 def get_from_file(urls):
-    '''
+    """
     Получение данных с plab'а
     :param urls: массив url, из которых собираем json'ы
     :return: словарь. ключ - ссылка, значение - jsonы этой ссылки
-    '''
+    """
 
     result = {}
 
@@ -81,15 +81,17 @@ def get_from_file(urls):
             result[url] = data_json
     return result
 
-def save_recieved_plab_answer(run_id, resp):
-    '''
-    Saves results of request.get() to file in .\data\{run_id}\ in 2 files:
+
+def save_received_plab_answer(run_id, resp):
+    """
+    Saves results of request.get() to file in .\\data\\{run_id}\\ in 2 files:
     meta.txt - some attributes of the answer
     text.txt - data from resp.text (string)
     cont.txt - from resp.content (bytes)
+    :param run_id: run_id of the current process
     :param resp: - result of "requests.get(...)"
     :return:
-    '''
+    """
 
     if not os.path.exists('.\\data\\'):
         os.mkdir('.\\data\\')
@@ -118,11 +120,12 @@ def save_recieved_plab_answer(run_id, resp):
 
 
 def get_from_plabforum(run_id, urls):
-    '''
+    """
     Получение данных с plab'а
+    :param run_id:
     :param urls: массив url, из которых собираем json'ы
     :return: словарь. ключ - ссылка, значение - jsonы этой ссылки
-    '''
+    """
 
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     cookies = browser_cookie3.chrome(domain_name='.pornolab.net')
@@ -144,7 +147,7 @@ def get_from_plabforum(run_id, urls):
         except Exception as e:
             has_errors += 1
             status = (has_errors, 'Connection error: {}'.format(str(e)))
-            save_recieved_plab_answer(run_id, r)
+            save_received_plab_answer(run_id, r)
             return status, result
 
         try:
@@ -152,10 +155,10 @@ def get_from_plabforum(run_id, urls):
         except Exception as e:
             has_errors += 1
             status = (has_errors, 'JSON parsing_error: {}'.format(str(e)))
-            save_recieved_plab_answer(run_id, r)
+            save_received_plab_answer(run_id, r)
             return status, result
 
-        print('     Recieved {} topics'.format(len(j)))
+        print('     Received {} topics'.format(len(j)))
         print()
         result[url] = j
 
@@ -169,7 +172,7 @@ def get_jsons_from_plab(run_id, urls):
         return status, result
 
     for url in result.keys():
-        # print('    Recieved {} topics'.format(len(result[url])))
+        # print('    Received {} topics'.format(len(result[url])))
         for topic in result[url]:
             title = str(topic['TOPIC_TITLE'])
             title = title.replace('<wbr>', '').replace('<b>', '').replace('</b>', '')
@@ -212,7 +215,6 @@ def get_urls_data():
 def save_new_url(url):
     cfg = configparser.ConfigParser()
     cfg.read('config.ini')
-    url_id = None
     with psycopg2.connect(host=cfg['DEFAULT']['host'],
                           port=int(cfg['DEFAULT']['port']),
                           database=cfg['DEFAULT']['database'],
@@ -220,7 +222,7 @@ def save_new_url(url):
                           password=cfg['DEFAULT']['password']) as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             sql_save_url = '''INSERT INTO plab2.urls (url) VALUES (%s) RETURNING (url_id)'''
-            cur.execute(sql_save_url, (url, ))
+            cur.execute(sql_save_url, (url,))
             url_id = cur.fetchone()['url_id']
     return url_id
 
@@ -238,7 +240,9 @@ def update_forums(data):
                           user=cfg['DEFAULT']['user'],
                           password=cfg['DEFAULT']['password']) as conn:
         with conn.cursor() as cur:
-            sql_update_forums = '''INSERT INTO plab2.forums (forum_id, forum_name) VALUES (%s, %s) ON CONFLICT (forum_id) DO NOTHING'''
+            sql_update_forums = '''INSERT INTO plab2.forums (forum_id, forum_name) 
+                                    VALUES (%s, %s) 
+                                    ON CONFLICT (forum_id) DO NOTHING'''
             cur.executemany(sql_update_forums, forums_data)
         conn.commit()
 
@@ -256,7 +260,9 @@ def update_posters(data):
                           user=cfg['DEFAULT']['user'],
                           password=cfg['DEFAULT']['password']) as conn:
         with conn.cursor() as cur:
-            sql_update_posters = '''INSERT INTO plab2.posters (poster_id, poster_name) VALUES (%s, %s) ON CONFLICT (poster_id) DO NOTHING'''
+            sql_update_posters = '''INSERT INTO plab2.posters (poster_id, poster_name) 
+                                    VALUES (%s, %s) 
+                                    ON CONFLICT (poster_id) DO NOTHING'''
             cur.executemany(sql_update_posters, posters_data)
         conn.commit()
 
@@ -270,7 +276,8 @@ def save_url_topics(data):
                           user=cfg['DEFAULT']['user'],
                           password=cfg['DEFAULT']['password']) as conn:
         with conn.cursor() as cur:
-            sql_update_posters = '''INSERT INTO plab2.url_topics (url_id, topic_id, run_id) VALUES (%s, %s, %s)'''
+            sql_update_posters = '''INSERT INTO plab2.url_topics (url_id, topic_id, run_id) 
+                                    VALUES (%s, %s, %s)'''
             cur.executemany(sql_update_posters, data)
         conn.commit()
 
@@ -303,32 +310,41 @@ def save_new_topics(run_id, topic_ids, plab_data):
                           password=cfg['DEFAULT']['password']) as conn:
         with conn.cursor() as cur:
             sql_topic_insert = '''INSERT INTO plab2.topics
-                (topic_id, created_by_run_id, updated_by_run_id, topic_title, topic_time, poster_id, forum_id, tor_status_text, tor_size, tor_size_int, tor_private, info_hash, added_time, added_date, added_int, added_dttm, user_author, tor_frozen, seed_never_seen)
+                (topic_id, created_by_run_id, updated_by_run_id, topic_title, topic_time, poster_id, forum_id, 
+                tor_status_text, tor_size, tor_size_int, tor_private, info_hash, added_time, 
+                added_date, added_int, added_dttm, user_author, tor_frozen, seed_never_seen)
                 VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
                 '''
             sql_seeding_insert = '''INSERT INTO plab2.seeding_info
-            (topic_id, run_id, seeds, leechs, unique_seeds, seeder_last_seen, seeder_last_seen_dttm, not_seen_days, user_seed_this, completed, keepers_cnt)
+            (topic_id, run_id, seeds, leechs, unique_seeds, seeder_last_seen, 
+            seeder_last_seen_dttm, not_seen_days, user_seed_this, completed, keepers_cnt)
             VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             '''
             values_topic_all = []
             values_seeding_info_all = []
             for topic_id in topic_ids:
                 values_topic = (
-                plab_data[topic_id]['TOPIC_ID'], run_id, run_id, plab_data[topic_id]['TOPIC_TITLE'], plab_data[topic_id]['TOPIC_TIME'], plab_data[topic_id]['POSTER_ID'],
-                plab_data[topic_id]['FORUM_ID'], plab_data[topic_id]['TOR_STATUS_TEXT'], plab_data[topic_id]['TOR_SIZE'], plab_data[topic_id]['TOR_SIZE_INT'],
-                plab_data[topic_id]['TOR_PRIVATE'], plab_data[topic_id]['INFO_HASH'], plab_data[topic_id]['ADDED_TIME'], plab_data[topic_id]['ADDED_DATE'],
-                plab_data[topic_id]['ADDED_INT'], datetime.datetime.fromtimestamp(plab_data[topic_id]['ADDED_INT']),
-                plab_data[topic_id]['USER_AUTHOR'], plab_data[topic_id]['TOR_FROZEN'], plab_data[topic_id]['SEED_NEVER_SEEN'])
+                    plab_data[topic_id]['TOPIC_ID'], run_id, run_id, plab_data[topic_id]['TOPIC_TITLE'],
+                    plab_data[topic_id]['TOPIC_TIME'], plab_data[topic_id]['POSTER_ID'],
+                    plab_data[topic_id]['FORUM_ID'], plab_data[topic_id]['TOR_STATUS_TEXT'],
+                    plab_data[topic_id]['TOR_SIZE'], plab_data[topic_id]['TOR_SIZE_INT'],
+                    plab_data[topic_id]['TOR_PRIVATE'], plab_data[topic_id]['INFO_HASH'],
+                    plab_data[topic_id]['ADDED_TIME'], plab_data[topic_id]['ADDED_DATE'],
+                    plab_data[topic_id]['ADDED_INT'], datetime.datetime.fromtimestamp(plab_data[topic_id]['ADDED_INT']),
+                    plab_data[topic_id]['USER_AUTHOR'], plab_data[topic_id]['TOR_FROZEN'],
+                    plab_data[topic_id]['SEED_NEVER_SEEN'])
                 values_topic_all.append(values_topic)
 
                 not_seen_days = plab_data[topic_id]['NOT_SEEN_DAYS']
                 if not_seen_days == '':
                     not_seen_days = 0
                 values_seeding_info = (
-                plab_data[topic_id]['TOPIC_ID'], run_id, plab_data[topic_id]['SEEDS'], plab_data[topic_id]['LEECHS'], plab_data[topic_id]['UNIQUE_SEEDS'],
-                plab_data[topic_id]['SEEDER_LAST_SEEN'], datetime.datetime.fromtimestamp(plab_data[topic_id]['SEEDER_LAST_SEEN']),
-                not_seen_days, plab_data[topic_id]['USER_SEED_THIS'],
-                plab_data[topic_id]['COMPLETED'], plab_data[topic_id]['KEEPERS_CNT'])
+                    plab_data[topic_id]['TOPIC_ID'], run_id, plab_data[topic_id]['SEEDS'],
+                    plab_data[topic_id]['LEECHS'], plab_data[topic_id]['UNIQUE_SEEDS'],
+                    plab_data[topic_id]['SEEDER_LAST_SEEN'],
+                    datetime.datetime.fromtimestamp(plab_data[topic_id]['SEEDER_LAST_SEEN']),
+                    not_seen_days, plab_data[topic_id]['USER_SEED_THIS'],
+                    plab_data[topic_id]['COMPLETED'], plab_data[topic_id]['KEEPERS_CNT'])
                 values_seeding_info_all.append(values_seeding_info)
 
             cur.executemany(sql_topic_insert, values_topic_all)
@@ -347,14 +363,16 @@ def save_changed_topics(run_id, topic_ids, plab_data):
                           password=cfg['DEFAULT']['password']) as conn:
         with conn.cursor() as cur:
             sql_move_topic = '''INSERT INTO plab2.topics_hist
-            (topic_id, created_by_run_id, updated_by_run_id, topic_title, topic_time, poster_id, forum_id, tor_status_text, 
-            tor_size, tor_size_int, tor_private, info_hash, added_time, added_date, added_int, added_dttm, 
-            user_author, tor_frozen, seed_never_seen)
-            SELECT topic_id, created_by_run_id, updated_by_run_id, topic_title, topic_time, poster_id, forum_id, tor_status_text, tor_size, tor_size_int, tor_private, info_hash, added_time, added_date, added_int, added_dttm, user_author, tor_frozen, seed_never_seen
+            (topic_id, created_by_run_id, updated_by_run_id, topic_title, topic_time, poster_id, forum_id, 
+            tor_status_text, tor_size, tor_size_int, tor_private, info_hash, added_time, added_date, added_int, 
+            added_dttm, user_author, tor_frozen, seed_never_seen)
+            SELECT topic_id, created_by_run_id, updated_by_run_id, topic_title, topic_time, poster_id, forum_id, 
+            tor_status_text, tor_size, tor_size_int, tor_private, info_hash, added_time, added_date, added_int, 
+            added_dttm, user_author, tor_frozen, seed_never_seen
             FROM plab2.topics WHERE topic_id = %s'''
             values_to_move_all = []
             for topic_id in topic_ids:
-                values_to_move_all.append((topic_id, ))
+                values_to_move_all.append((topic_id,))
             cur.executemany(sql_move_topic, values_to_move_all)
 
             sql_update_topic = '''UPDATE plab2.topics SET 
@@ -379,7 +397,8 @@ def save_changed_topics(run_id, topic_ids, plab_data):
             cur.executemany(sql_update_topic, values_update_topic_all)
 
             sql_seeding_insert = '''INSERT INTO plab2.seeding_info
-                                    (topic_id, run_id, seeds, leechs, unique_seeds, seeder_last_seen, seeder_last_seen_dttm, not_seen_days, user_seed_this, completed, keepers_cnt)
+                                    (topic_id, run_id, seeds, leechs, unique_seeds, seeder_last_seen, 
+                                    seeder_last_seen_dttm, not_seen_days, user_seed_this, completed, keepers_cnt)
                                     VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
                                     '''
             values_seeding_info_all = []
@@ -416,7 +435,8 @@ def save_unchanged_topics(run_id, topic_ids, plab_data):
             conn.commit()
 
             sql_seeding_insert = '''INSERT INTO plab2.seeding_info
-                        (topic_id, run_id, seeds, leechs, unique_seeds, seeder_last_seen, seeder_last_seen_dttm, not_seen_days, user_seed_this, completed, keepers_cnt)
+                        (topic_id, run_id, seeds, leechs, unique_seeds, seeder_last_seen, 
+                        seeder_last_seen_dttm, not_seen_days, user_seed_this, completed, keepers_cnt)
                         VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
                         '''
             values_seeding_info_all = []
@@ -486,9 +506,10 @@ def save_plab_data(run_id, data_from_plab, urls_data):
                 tor_frozen_changed = all_topics_info[topic_id]['tor_frozen'] != topic['TOR_FROZEN']
                 seed_never_seen_changed = all_topics_info[topic_id]['seed_never_seen'] != topic['SEED_NEVER_SEEN']
 
-                updated = topic_title_changed or topic_time_changed or poster_id_changed or forum_id_changed \
-                    or tor_status_text_changed or tor_size_int_changed or tor_private_changed or info_hash_changed \
-                    or added_int_changed or user_author_changed or tor_frozen_changed or seed_never_seen_changed
+                updated = topic_title_changed or topic_time_changed or poster_id_changed
+                updated = updated or forum_id_changed or tor_status_text_changed or tor_size_int_changed
+                updated = updated or tor_private_changed or info_hash_changed or added_int_changed
+                updated = updated or user_author_changed or tor_frozen_changed or seed_never_seen_changed
 
                 if updated:
                     changed_topics.add(topic_id)
@@ -499,7 +520,6 @@ def save_plab_data(run_id, data_from_plab, urls_data):
         for dat in data_from_plab[url]:
             topic_id = dat['TOPIC_ID']
             d[topic_id] = dat
-
 
         save_new_topics(run_id, new_topics, d)
         print('                         New topics:       {}'.format(len(new_topics)))
@@ -528,7 +548,7 @@ def finish_run(run_id, error_text):
                 conn.commit()
             else:
                 cur.execute(sql_get_run_id, (-1, datetime.datetime.now(), run_id))
-                sql_save_errors = '''INSERT INTO plab2.run_errors (run_id, error_type, error_text) VALUES (%s, %s, %s)'''
+                sql_save_errors = 'INSERT INTO plab2.run_errors (run_id, error_type, error_text) VALUES (%s, %s, %s)'
                 cur.execute(sql_save_errors, (run_id, 'ERROR', error_text))
                 conn.commit()
 
@@ -547,7 +567,6 @@ def main():
 
     status, data_from_plab = get_jsons_from_plab(run_id, urls)  # get jsons from files or from plab
 
-
     if status[0] != 0:
         finish_run(run_id, status[1])
         return status, start_dttm
@@ -558,8 +577,9 @@ def main():
         error_text = None
         finish_run(run_id, error_text)
         print('Finished run_id = {} at {}'.format(run_id, finish_dttm))
-        print('Run_id = {} duration: {}'.format(run_id, finish_dttm-start_dttm))
+        print('Run_id = {} duration: {}'.format(run_id, finish_dttm - start_dttm))
         return status, start_dttm
+
 
 if __name__ == '__main__':
     while True:
@@ -573,12 +593,11 @@ if __name__ == '__main__':
                 print('Retry failed. Waiting next cycle')
         print('{}: going to sleep'.format(get_now()))
         print('\n\n\n')
-        time.sleep(60*60 - int((datetime.datetime.now()-start_dttm).total_seconds()))
-
+        time.sleep(60 * 60 - int((datetime.datetime.now() - start_dttm).total_seconds()))
 
 # TODO check VPN status (by IP? by trying to go to main plab page? smth else?). Try to start VPN
 # TODO catch exceptions and write them to run_errors
-# TODO if error - try after some minutes withthe same run_id and warining in logs
+# TODO if error - try after some minutes with the same run_id and warning in logs
 # TODO save jsons from plab to disk and ability to process them (in debugger?)
 # TODO check if authorization at plab is okay
 # TODO start script with scheduler (with venv and correct paths)
