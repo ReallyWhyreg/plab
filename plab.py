@@ -275,21 +275,6 @@ def save_url_topics(data):
         conn.commit()
 
 
-# def get_topic_info(topic_id):
-#     cfg = configparser.ConfigParser()
-#     cfg.read('config.ini')
-#     with psycopg2.connect(host=cfg['DEFAULT']['host'],
-#                           port=int(cfg['DEFAULT']['port']),
-#                           database=cfg['DEFAULT']['database'],
-#                           user=cfg['DEFAULT']['user'],
-#                           password=cfg['DEFAULT']['password']) as conn:
-#         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-#             sql_topic_info = '''SELECT * from plab2.topics WHERE topic_id = %s'''
-#             cur.execute(sql_topic_info, (topic_id,))
-#             data = cur.fetchall()
-#             return data
-
-
 def get_all_topics_info():
     result = {}
     cfg = configparser.ConfigParser()
@@ -306,112 +291,6 @@ def get_all_topics_info():
             for dat in data:
                 result[dat['topic_id']] = dat
             return result
-
-
-# def insert_new_topic(run_id, topic):
-#     cfg = configparser.ConfigParser()
-#     cfg.read('config.ini')
-#     with psycopg2.connect(host=cfg['DEFAULT']['host'],
-#                           port=int(cfg['DEFAULT']['port']),
-#                           database=cfg['DEFAULT']['database'],
-#                           user=cfg['DEFAULT']['user'],
-#                           password=cfg['DEFAULT']['password']) as conn:
-#         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-#             sql_topic_insert = '''INSERT INTO plab2.topics
-#             (topic_id, created_by_run_id, updated_by_run_id, topic_title, topic_time, poster_id, forum_id, tor_status_text, tor_size, tor_size_int, tor_private, info_hash, added_time, added_date, added_int, added_dttm, user_author, tor_frozen, seed_never_seen)
-#             VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
-#             '''
-#             values_topic = (topic['TOPIC_ID'], run_id, run_id, topic['TOPIC_TITLE'], topic['TOPIC_TIME'], topic['POSTER_ID'],
-#                       topic['FORUM_ID'], topic['TOR_STATUS_TEXT'], topic['TOR_SIZE'], topic['TOR_SIZE_INT'],
-#                       topic['TOR_PRIVATE'], topic['INFO_HASH'], topic['ADDED_TIME'], topic['ADDED_DATE'],
-#                       topic['ADDED_INT'], datetime.datetime.fromtimestamp(topic['ADDED_INT']),
-#                       topic['USER_AUTHOR'], topic['TOR_FROZEN'], topic['SEED_NEVER_SEEN'])
-#             cur.execute(sql_topic_insert, values_topic)
-#
-#             conn.commit()
-
-
-# def insert_seeding_info(run_id, topic):
-#     cfg = configparser.ConfigParser()
-#     cfg.read('config.ini')
-#     with psycopg2.connect(host=cfg['DEFAULT']['host'],
-#                           port=int(cfg['DEFAULT']['port']),
-#                           database=cfg['DEFAULT']['database'],
-#                           user=cfg['DEFAULT']['user'],
-#                           password=cfg['DEFAULT']['password']) as conn:
-#         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-#             sql_seeding_insert = '''INSERT INTO plab2.seeding_info
-# (topic_id, run_id, seeds, leechs, unique_seeds, seeder_last_seen, seeder_last_seen_dttm, not_seen_days, user_seed_this, completed, keepers_cnt)
-# VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
-# '''
-#             not_seen_days = topic['NOT_SEEN_DAYS']
-#             if not_seen_days == '':
-#                 not_seen_days = 0
-#             values_seeding_info = (topic['TOPIC_ID'], run_id, topic['SEEDS'], topic['LEECHS'], topic['UNIQUE_SEEDS'],
-#                                    topic['SEEDER_LAST_SEEN'], datetime.datetime.fromtimestamp(topic['SEEDER_LAST_SEEN']),
-#                                    not_seen_days, topic['USER_SEED_THIS'],
-#                                    topic['COMPLETED'], topic['KEEPERS_CNT'])
-#             cur.execute(sql_seeding_insert, values_seeding_info)
-#
-#         conn.commit()
-
-
-# def update_topic_run_id(topic_id, run_id):
-#     cfg = configparser.ConfigParser()
-#     cfg.read('config.ini')
-#     with psycopg2.connect(host=cfg['DEFAULT']['host'],
-#                           port=int(cfg['DEFAULT']['port']),
-#                           database=cfg['DEFAULT']['database'],
-#                           user=cfg['DEFAULT']['user'],
-#                           password=cfg['DEFAULT']['password']) as conn:
-#         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-#             sql_update_run_id = '''UPDATE plab2.topics SET updated_by_run_id = %s WHERE topic_id = %s'''
-#             cur.execute(sql_update_run_id, (run_id, topic_id))
-#         conn.commit()
-
-
-# def move_topic_to_history(topic_id):
-#     cfg = configparser.ConfigParser()
-#     cfg.read('config.ini')
-#     with psycopg2.connect(host=cfg['DEFAULT']['host'],
-#                           port=int(cfg['DEFAULT']['port']),
-#                           database=cfg['DEFAULT']['database'],
-#                           user=cfg['DEFAULT']['user'],
-#                           password=cfg['DEFAULT']['password']) as conn:
-#         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-#             sql_move_topic = '''INSERT INTO plab2.topics_hist
-# (topic_id, created_by_run_id, updated_by_run_id, topic_title, topic_time, poster_id, forum_id, tor_status_text,
-# tor_size, tor_size_int, tor_private, info_hash, added_time, added_date, added_int, added_dttm,
-# user_author, tor_frozen, seed_never_seen)
-# SELECT topic_id, created_by_run_id, updated_by_run_id, topic_title, topic_time, poster_id, forum_id, tor_status_text, tor_size, tor_size_int, tor_private, info_hash, added_time, added_date, added_int, added_dttm, user_author, tor_frozen, seed_never_seen
-# FROM plab2.topics WHERE topic_id = %s'''
-#             cur.execute(sql_move_topic, (topic_id, ))
-#         conn.commit()
-
-
-# def update_topic(run_id, topic):
-#     cfg = configparser.ConfigParser()
-#     cfg.read('config.ini')
-#     with psycopg2.connect(host=cfg['DEFAULT']['host'],
-#                           port=int(cfg['DEFAULT']['port']),
-#                           database=cfg['DEFAULT']['database'],
-#                           user=cfg['DEFAULT']['user'],
-#                           password=cfg['DEFAULT']['password']) as conn:
-#         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-#             sql_update_topic = '''UPDATE plab2.topics SET
-#             created_by_run_id=%s, updated_by_run_id=%s, topic_title=%s, topic_time=%s, poster_id=%s,
-#             forum_id=%s, tor_status_text=%s, tor_size=%s, tor_size_int=%s, tor_private=%s, info_hash=%s,
-#             added_time=%s, added_date=%s, added_int=%s, added_dttm=%s, user_author=%s,
-#             tor_frozen=%s, seed_never_seen=%s
-#             WHERE topic_id=%s;'''
-#
-#             values_update_topic = (run_id, run_id, topic['TOPIC_TITLE'], topic['TOPIC_TIME'], topic['POSTER_ID'],
-#                       topic['FORUM_ID'], topic['TOR_STATUS_TEXT'], topic['TOR_SIZE'], topic['TOR_SIZE_INT'],
-#                       topic['TOR_PRIVATE'], topic['INFO_HASH'], topic['ADDED_TIME'], topic['ADDED_DATE'],
-#                       topic['ADDED_INT'], datetime.datetime.fromtimestamp(topic['ADDED_INT']),
-#                       topic['USER_AUTHOR'], topic['TOR_FROZEN'], topic['SEED_NEVER_SEEN'], topic['TOPIC_ID'])
-#             cur.execute(sql_update_topic, values_update_topic)
-#         conn.commit()
 
 
 def save_new_topics(run_id, topic_ids, plab_data):
