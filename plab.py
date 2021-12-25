@@ -553,7 +553,7 @@ def finish_run(run_id, error_text):
                 conn.commit()
 
 
-def main():
+def start_process():
     start_dttm = get_now()
 
     run_id = get_new_run_id()
@@ -580,17 +580,27 @@ def main():
         print('Run_id = {} duration: {}'.format(run_id, finish_dttm - start_dttm))
         return status, start_dttm
 
+def main():
+    status = (-100, None)
+    start_dttm = datetime.datetime.now()
+    initial_start_dttm = datetime.datetime.now()
+    retries_left = 3  # Total number of tries: main and retries
+    retry_timeout = 3*60  # period between retries
+    while status[0] != 0 and retries_left > 0:
+        retries_left -= 1
+        status, start_dttm = start_process()
+        if status[0] != 0:
+            print('Run failed. Waiting for the next retry {} seconds'.format(retry_timeout))
+            time.sleep(retry_timeout)
+    if status[0] != 0:
+        print()
+        print('All tries failed')
+    return status, initial_start_dttm
+
 
 if __name__ == '__main__':
     while True:
         status, start_dttm = main()
-        if status[0] != 0:
-            retry_timeout = 60
-            print('Have errors in run. \n{}\nTrying to retry in {} seconds'.format(status[1], retry_timeout))
-            time.sleep(retry_timeout)
-            status, start_dttm_retry = main()
-            if status[0] != 0:
-                print('Retry failed. Waiting next cycle')
         print('{}: going to sleep'.format(get_now()))
         print('\n\n\n')
         time.sleep(60 * 60 - int((datetime.datetime.now() - start_dttm).total_seconds()))
