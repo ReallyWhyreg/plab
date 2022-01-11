@@ -144,6 +144,29 @@ def get_from_plabforum(run_id, urls):
         print('Processing URL ({} of {}): {}'.format(i, len(urls), url))
         try:
             r = requests.get(url, verify=False, headers=headers, cookies=cookies, timeout=15)
+            status_code = r.status_code
+            if status_code is None:
+                has_errors += 1
+                status = (has_errors, 'No status_code from plab on request {}'.format(url))
+                save_received_plab_answer(run_id, r)
+                return status, result
+            elif status_code != 200:
+                has_errors += 1
+                status = (has_errors, 'Bad status_code={} from plab on request {}'.format(status_code, url))
+                save_received_plab_answer(run_id, r)
+                return status, result
+            elif status_code == 200 and (r.headers.get('content-type', '') == 'text/html; charset=windows-1251' or
+                                         'expires' in r.headers.keys() or
+                                         'pragma' in r.headers.keys() or
+                                         r.text.startswith('<!DOCTYPE html>')
+                                        ):
+                # pass
+                has_errors += 1
+                status = (has_errors, 'HTML returned. Cookies expired? Request {}'.format(status_code, url))
+                # TODO Also forum may be disconnected "Форум отключён"
+                save_received_plab_answer(run_id, r)
+                return status, result
+
         except Exception as e:
             has_errors += 1
             status = (has_errors, 'Connection error: {}'.format(str(e)))
@@ -584,7 +607,7 @@ def main():
     status = (-100, None)
     start_dttm = datetime.datetime.now()
     initial_start_dttm = datetime.datetime.now()
-    retries_left = 3  # Total number of tries: main and retries
+    retries_left = 5  # Total number of tries: main and retries
     retry_timeout = 3*60  # period between retries
     while status[0] != 0 and retries_left > 0:
         retries_left -= 1
